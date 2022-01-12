@@ -1,7 +1,7 @@
 Package: DQAstats
 Title: Core Functions for Data Quality Assessment
-Version: 0.2.1
-Date: 2022-01-04
+Version: 0.2.2
+Date: 2022-01-12
 Authors@R: c(
     person("Lorenz A.", "Kapsner", , "lorenz.kapsner@uk-erlangen.de", role = c("cre", "aut"),
            comment = c(ORCID = "0000-0003-1866-860X")),
@@ -23,7 +23,7 @@ Suggests: lintr, remotes, testthat
 Encoding: UTF-8
 RoxygenNote: 7.1.2
 NeedsCompilation: no
-Packaged: 2022-01-04 14:40:11 UTC; user
+Packaged: 2022-01-12 08:44:14 UTC; user
 Author: Lorenz A. Kapsner [cre, aut] (<https://orcid.org/0000-0003-1866-860X>),
   Jonathan M. Mang [aut] (<https://orcid.org/0000-0003-0518-4710>),
   MIRACUM - Medical Informatics in Research and Care in University
@@ -31,4 +31,4 @@ Author: Lorenz A. Kapsner [cre, aut] (<https://orcid.org/0000-0003-1866-860X>),
   Universitätsklinikum Erlangen [cph]
 Maintainer: Lorenz A. Kapsner <lorenz.kapsner@uk-erlangen.de>
 Repository: CRAN
-Date/Publication: 2022-01-11 09:52:53 UTC
+Date/Publication: 2022-01-12 12:42:48 UTC
