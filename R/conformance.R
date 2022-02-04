@@ -1,6 +1,6 @@
 # DQAstats - Perform data quality assessment (DQA) of electronic health
 # records (EHR)
-# Copyright (C) 2019-2021 Universitätsklinikum Erlangen
+# Copyright (C) 2019-2022 Universitätsklinikum Erlangen
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -287,8 +287,7 @@ value_conformance <- function(
                     "No data available to perform conformance checks."
                 } else {
                   # get valueset from mdr
-                  constraints <-
-                    unlist(strsplit(constraints$value_set, ", ", fixed = T))
+                  constraints <- constraints$value_set
                   # get levels from results
                   levels_results <-
                     s_out[, levels(get(colnames(s_out)[1]))]

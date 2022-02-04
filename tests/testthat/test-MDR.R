@@ -1,6 +1,6 @@
 # DQAstats - Perform data quality assessment (DQA)
 # of electronic health records (EHR)
-# Copyright (C) 2019-2021 Universitätsklinikum Erlangen
+# Copyright (C) 2019-2022 Universitätsklinikum Erlangen
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -80,7 +80,7 @@ test_that("correct functioning of MDR", {
 
   expect_type(rv$mdr, "list")
   expect_equal(nrow(rv$mdr), 24)
-  expect_true(ncol(rv$mdr) == 22)
+  expect_true(ncol(rv$mdr) == 18)
   expect_s3_class(rv$mdr, "data.table")
 
   # Remove the settings and output-folder:
@@ -89,4 +89,9 @@ test_that("correct functioning of MDR", {
   )))
   unlink(paste0(output_dir, "_header"), recursive = T)
   unlink(output_dir, recursive = T)
+
+  do.call(
+    file.remove,
+    list(list.files(tempdir(), pattern = "log$", full.names = TRUE))
+  )
 })

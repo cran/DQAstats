@@ -1,6 +1,6 @@
 # DQAstats - Perform data quality assessment (DQA) of electronic health
 # records (EHR)
-# Copyright (C) 2019-2021 Universitätsklinikum Erlangen
+# Copyright (C) 2019-2022 Universitätsklinikum Erlangen
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -143,7 +143,10 @@ render_value_conformance <- function(results,
 
   if (desc_out[[source]]$checks$var_type ==
       "enumerated") {
-    cat("- Constraining values/rules: '", json_obj$value_set, "'")
+    cat("- Constraining values/rules: '",
+        paste(json_obj$value_set,
+              collapse = ", "),
+        "'")
 
   } else if (desc_out[[source]]$checks$var_type ==
              "string") {
@@ -439,7 +442,7 @@ create_markdown <- function(rv = rv,
     "and `tinytex::install_tinytex()`\n\n",
     "!!! DQAstats is not able to render the PDF report !!!"
   )
-  if (!tinytex::is_tinytex()) {
+  if (!is_latex_installed(logfile_dir = rv$log$logfile_dir, headless = rv$headless)) {
     DIZutils::feedback(
       print_this = catch_msg,
       type = "Error",

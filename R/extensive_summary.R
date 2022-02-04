@@ -1,6 +1,6 @@
 # DQAstats - Perform data quality assessment (DQA) of electronic health
 # records (EHR)
-# Copyright (C) 2019-2021 Universitätsklinikum Erlangen
+# Copyright (C) 2019-2022 Universitätsklinikum Erlangen
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -43,12 +43,6 @@ extensive_summary <- function(vector) {
     ), 2)),
     c("OutHi", round(as.numeric(
       base::sum(vector > (quant[2] + i_out), na.rm = TRUE)
-    ), 2)),
-    c("Skewness", round(as.numeric(
-      e1071::skewness(vector, na.rm = TRUE)
-    ), 2)),
-    c("Kurtosis", round(as.numeric(
-      e1071::kurtosis(vector, na.rm = TRUE)
     ), 2)),
     c("Variance", round(as.numeric(
       stats::var(vector, na.rm = TRUE)

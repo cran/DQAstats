@@ -1,6 +1,6 @@
 # DQAstats - Perform data quality assessment (DQA) of electronic health
 # records (EHR)
-# Copyright (C) 2019-2021 Universitätsklinikum Erlangen
+# Copyright (C) 2019-2022 Universitätsklinikum Erlangen
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -28,6 +28,7 @@
 #' @return A data.table with the results of the datamap.
 #'
 #' @examples
+#' \donttest{# runtime > 5 sec.
 #' utils_path <- system.file(
 #'   "demo_data/utilities/",
 #'   package = "DQAstats"
@@ -129,7 +130,7 @@
 #'   rv = rv,
 #'   headless = rv$headless
 #' )
-#'
+#' }
 #' @export
 #'
 generate_datamap <- function(results,

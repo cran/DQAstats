@@ -1,6 +1,6 @@
 # DQAstats - Perform data quality assessment (DQA) of electronic health
 # records (EHR)
-# Copyright (C) 2019-2021 Universitätsklinikum Erlangen
+# Copyright (C) 2019-2022 Universitätsklinikum Erlangen
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -411,7 +411,7 @@ load_database <- function(rv,
     USE.NAMES = TRUE
   )
 
-  RPostgres::dbDisconnect(db_con)
+  DIZutils::close_connection(db_con)
 
   for (i in keys_to_test) {
     # workaround to hide shiny-stuff, when going headless
@@ -574,9 +574,52 @@ data_loading <- function(rv, system, keys_to_test) {
   outlist <- list()
 
   if (system$system_type == "csv") {
-    system$settings$path <- Sys.getenv(
-      paste0(toupper(system$system_name), "_PATH")
-    )
+    ## Get path to csv files from environment or variable:
+    env_var_name <- paste0(toupper(system$system_name), "_PATH")
+    if (dir.exists(Sys.getenv(env_var_name))) {
+      system$settings$path <- Sys.getenv(env_var_name)
+      DIZutils::feedback(
+        print_this = paste0(
+          "Found the path to the csv files in the environment: '",
+          system$settings$path
+        ),
+        headless = rv$headless,
+        findme = "d45dad8b72"
+      )
+    } else if (dir.exists(system$settings$path)) {
+      DIZutils::feedback(
+        print_this = paste0(
+          "Found the path to the csv files in 'system$settings$path': '",
+          system$settings$path,
+          "'. Environment variable ",
+          env_var_name,
+          " was '",
+          Sys.getenv(env_var_name),
+          "'."
+        ),
+        headless = rv$headless,
+        findme = "46a2f26236"
+      )
+    } else {
+      DIZutils::feedback(
+        print_this = paste0(
+          "No existing path to the csv files could be found in",
+          "'system$settings$path' (=",
+          system$settings$path,
+          ") or in the environment (='",
+          Sys.getenv(paste0(toupper(
+            system$system_name
+          ), "_PATH")),
+          "').",
+          system$settings$path
+        ),
+        headless = rv$headless,
+        findme = "cf220c689f",
+        type = "Error"
+      )
+      stop("See error above.")
+    }
+    rm(env_var_name)
     stopifnot(nchar(system$settings$path) > 0)
 
     test_csv_result <- test_csv(

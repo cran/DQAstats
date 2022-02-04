@@ -1,6 +1,6 @@
 # DQAstats - Perform data quality assessment (DQA) of electronic health
 # records (EHR)
-# Copyright (C) 2019-2021 Universitätsklinikum Erlangen
+# Copyright (C) 2019-2022 Universitätsklinikum Erlangen
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -363,7 +363,6 @@ apply_time_restriciton <- function(data,
         logfile_dir = logfile_dir,
         findme = "4ec2f96277"
       )
-      print(tables)
       stop("See error above")
     } else {
       for (table in tables$source_table_name) {
