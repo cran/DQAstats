@@ -38,8 +38,8 @@
 #'   be stored (default: `paste0(tempdir(), "/output/")`).
 #' @param logfile_dir The absolute path to folder where the logfile
 #'   will be stored default(`tempdir()`).
-#' @param parallel A boolean. If TRUE (the default value), initializing
-#'   `future::plan("multiprocess")` before running the code.
+#' @param parallel A boolean. If TRUE, initializing a `future::plan()`
+#'   for running the code (default: FALSE).
 #' @param ncores A integer. The number of cores to use. Caution: you would
 #'   probably like to choose a low number when operating on large datasets.
 #'   Default: 2.
@@ -104,14 +104,14 @@ dqa <- function(source_system_name,
                 mdr_filename = "mdr.csv",
                 output_dir = paste0(tempdir(), "/output/"),
                 logfile_dir = tempdir(),
-                parallel = TRUE,
-                ncores = 4,
+                parallel = FALSE,
+                ncores = 2,
                 restricting_date_start = NULL,
                 restricting_date_end = NULL,
                 restricting_date_format = NULL) {
 
   ## Print versions of packages:
-  for (p in c("DIZutils", "DQAstats")) {
+  for (p in c("DIZtools", "DIZutils", "DQAstats")) {
     message(paste0("Version of '", p, "': ", utils::packageVersion(p)))
   }
 
@@ -360,6 +360,7 @@ dqa <- function(source_system_name,
     invisible(gc())
   } else {
     rv$data_target <- rv$data_source
+    rv$target$sql <- rv$source$sql
   }
 
   if (nrow(rv$pl$atemp_vars) > 0 && rv$pl$atemp_possible) {

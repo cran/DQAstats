@@ -17,7 +17,7 @@
 
 library(data.table)
 
-test_that("correct functioning of atemporal plausibilities", {
+test_that("correct functioning of rendering the conformance results", {
 
 
   utils_path <- system.file(
@@ -96,9 +96,6 @@ test_that("correct functioning of atemporal plausibilities", {
     headless = rv$headless
   )
 
-  expect_type(rv$data_plausibility$atemporal, "list")
-  expect_length(rv$data_plausibility$atemporal, n = 1)
-
   # add the plausibility raw data to data_target and data_source
   for (i in names(rv$data_plausibility$atemporal)) {
     for (k in c("source_data", "target_data")) {
@@ -116,8 +113,6 @@ test_that("correct functioning of atemporal plausibilities", {
     rv = rv,
     headless = rv$headless
   )
-  expect_type(rv$results_descriptive, "list")
-  expect_length(rv$results_descriptive, n = 12)
 
   # calculate atemporal plausibilites
   rv$results_plausibility_atemporal <- atemp_plausi_results(
@@ -126,8 +121,6 @@ test_that("correct functioning of atemporal plausibilities", {
     mdr = rv$mdr,
     headless = rv$headless
   )
-  expect_type(rv$results_plausibility_atemporal, "list")
-  expect_length(rv$results_plausibility_atemporal, n = 1)
 
   rv$results_plausibility_unique <- uniq_plausi_results(
     rv = rv,
@@ -135,8 +128,33 @@ test_that("correct functioning of atemporal plausibilities", {
     mdr = rv$mdr,
     headless = rv$headless
   )
-  expect_type(rv$results_plausibility_unique, "list")
-  expect_length(rv$results_plausibility_unique, n = 1)
+
+  rv$conformance$value_conformance <-
+    value_conformance(
+      rv = rv,
+      scope = "descriptive",
+      results = rv$results_descriptive,
+      headless = rv$headless,
+      logfile_dir = rv$log$logfile_dir
+    )
+
+  value_conformance_formatted <- sapply(
+    X = names(rv$results_descriptive),
+    FUN = function(i) {
+      desc_out <- rv$results_descriptive[[i]]$description
+
+      if (!is.null(rv$conformance$value_conformance[[i]])) {
+        format_value_conformance_results(
+          results = rv$conformance$value_conformance[[i]],
+          desc_out = desc_out,
+          source = "source_data"
+        )
+      }
+    }
+  )
+
+  local_edition(3)
+  expect_snapshot(value_conformance_formatted, cran = FALSE)
 
   do.call(
     file.remove,

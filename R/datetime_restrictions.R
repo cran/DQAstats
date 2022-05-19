@@ -187,10 +187,16 @@ check_date_restriction_requirements <- # nolint
 #'   Defaults to NULL.
 #' @param db_con (Optional for non-database-changes) The connection to the
 #'   database. Used to create the views we need later to apply the SQLs to.
+#' @param sql_create_view_all (Optional, list). A list containing the SQLs to
+#'   create all Views for the time-filtering. This is needed for the
+#'   printing-friendly SQL including this view-creating SQLs and the actual
+#'   data-extracting SQL query.
 #'
-#' @return If system_type is a database, the new sql-string containing the
-#'   temporal filtering will be returned ('order by' parts will be removed).
-#'   If system_type is 'csv', the filtered data.table will be returned.
+#' @return If system_type is a database, a list with the new sql-string
+#'   containing the temporal filtering will be returned under $sql
+#'  ('order by' parts will be removed) and a printable sql containing the
+#'  commands to create the view needed to run the sql under $sql_extended.
+#'  If system_type is 'csv', the filtered data.table will be returned.
 #'
 apply_time_restriciton <- function(data,
                                    # filter_colname,
@@ -201,7 +207,8 @@ apply_time_restriciton <- function(data,
                                    system_type,
                                    mdr,
                                    logfile_dir = NULL,
-                                   db_con = NULL) {
+                                   db_con = NULL,
+                                   sql_create_view_all = list()) {
 
 
   if (system_type == "csv") {
@@ -342,15 +349,22 @@ apply_time_restriciton <- function(data,
     # nolint end
 
     ## Get all tables needed for this SQL:
-    tables <-
-      unique(
-        mdr[get("source_system_name") == system_name,
+    tables <- mdr[get("source_system_name") == system_name,
             .SD,
             .SDcols = c("source_table_name",
                         "restricting_date_var",
                         "restricting_date_format")
-        ]
+        ] %>%
+      unique()
+    # ignore any where statements and stuff
+    tables[
+      ,
+      ("source_table_name") := gsub(
+        "^(\\S*)(\\s*WHERE.*)?$", "\\1", get("source_table_name")
       )
+    ]
+    tables <- tables %>%
+      unique()
     if (nrow(tables) != length(unique(tables[["source_table_name"]]))) {
       DIZtools::feedback(
         print_this = paste0(
@@ -365,6 +379,15 @@ apply_time_restriciton <- function(data,
       )
       stop("See error above")
     } else {
+      ## Here all commands to create the views will be stored for later
+      ## display in the GUI:
+      if(is.null(sql_create_view_all) ||
+         all(sapply(sql_create_view_all, function(x) {
+           is.na(x) || is.nan(x)
+         }))) {
+        sql_create_view_all <- list()
+      }
+
       for (table in tables$source_table_name) {
         if (is.na(tables[
           get("source_table_name") == table,
@@ -428,15 +451,6 @@ apply_time_restriciton <- function(data,
             "')"
           )
 
-          DIZtools::feedback(
-            print_this = paste0(
-              "SQL create view:\n", sql_create_view
-            ),
-            type = "Info",
-            findme = "ce1ihs8f3f",
-            logfile_dir = logfile_dir
-          )
-
           if (system_type == "oracle") {
             DIZtools::feedback(
               print_this = paste0(
@@ -449,48 +463,26 @@ apply_time_restriciton <- function(data,
             )
             stop("See error above.")
           }
+
+          # store view in list
+          sql_create_view_all[[view_name]] <- sql_create_view
+
           ## Create VIEW if it is not already created:
-          if (DIZutils::check_if_table_exists(
+          if (isFALSE(DIZutils::check_if_table_exists(
             db_con = db_con,
             table_name = view_name
-          )) {
-            # nolint start
-            # DIZtools::feedback(
-            #   print_this = paste0(
-            #     "Found a temporary VIEW for table '",
-            #     table,
-            #     "' which will be used now."
-            #   ),
-            #   findme = "dd695dbbe6",
-            #   logfile_dir = logfile_dir
-            # )
-            ## VIEW is already there. Normally we can be sure that this
-            ## VIEW is the right one and not an older one, because we
-            ## only create TEMP VIEWs which will automatically be removed
-            ## when the connection closes.
-            ## If you want to be sure, drop it and re-create it here:
-            # sql_drop_view <- paste0("DROP VIEW ", view_name)
-            # ## Drop it:
-            # DIZutils::query_database(
-            #   db_con = db_con,
-            #   sql_statement = sql_drop_view
-            # )
-            # ## Re-create it:
-            # DIZutils::query_database(
-            #   db_con = db_con,
-            #   sql_statement = sql_create_view
-            # )
-            # nolint end
-          } else {
+          ))) {
             DIZtools::feedback(
               print_this = paste0(
                 "Didn't find a temporary VIEW for table '",
                 table,
-                "'. Creating it now."
+                "'. Creating it now using:\n",
+                sql_create_view
               ),
               findme = "e1a20a8b94",
               logfile_dir = logfile_dir
             )
+
             ## Create the time-restricted VIEW:
             DIZutils::query_database(db_con = db_con,
                                      sql_statement = sql_create_view,
@@ -512,7 +504,8 @@ apply_time_restriciton <- function(data,
 
           DIZtools::feedback(
             print_this = paste0(
-              "SQL modified using view:\n", sql_tmp
+              "The SQL now uses the temporal filtered view:\n",
+              sql_tmp
             ),
             type = "Info",
             findme = "789ass8f3f",
@@ -521,13 +514,40 @@ apply_time_restriciton <- function(data,
         }
       }
     }
+
+    if(is.null(sql_create_view_all) ||
+       all(sapply(sql_create_view_all, function(x) {
+         is.na(x) || is.nan(x)
+       }))) {
+      DIZtools::feedback(
+        print_this = paste0("Couldn't get information about ",
+                            " the SQL views."),
+        type = "Warning",
+        findme = "9292c14a02"
+      )
+    }
+
     # nolint start
     # print("Old SQL:")
     # print(data)
     # print("New SQL:")
     # print(sql_tmp)
     # nolint end
-    return(sql_tmp)
+    return(list(
+      "sql" = sql_tmp,
+      "sql_extended" = paste0(
+        "-- Create the VIEWs:\n",
+        paste(sql_create_view_all, collapse = ";\n"),
+        ";\n\n",
+        "-- The actual SQL to extract the data:\n",
+        sql_tmp,
+        ";\n\n",
+        "-- If needed, drop the temporal VIEWs:\n",
+        paste("DROP VIEW", names(sql_create_view_all), collapse = ";\n"),
+        ";"
+      ),
+      "sql_create_view_all" = sql_create_view_all
+    ))
   } else {
     return(NULL)
   }

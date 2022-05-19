@@ -247,11 +247,15 @@ load_csv <- function(rv,
           ]
           if (is.na(date_format) ||
               grepl("^\\s*$", date_format) ||
-              is.null(jsonlite::fromJSON(date_format)[["datetime_format"]])) {
+              is.null(jsonlite::fromJSON(
+                date_format
+              )[["datetime"]][["format"]])) {
             # set date format to default value
             date_format <- "%Y-%m-%d"
           } else{
-            date_format <- jsonlite::fromJSON(date_format)[["datetime_format"]]
+            date_format <- jsonlite::fromJSON(
+              date_format
+            )[["datetime"]][["format"]]
           }
           outlist[[i]][, (vn) := as.Date(
             as.character(get(vn)),
@@ -292,16 +296,17 @@ load_database <- function(rv,
                           headless = FALSE,
                           db_type) {
 
-  # initialize outlist
+  ## Initialize outlist:
   outlist <- list()
 
-  # read target data
+  ## Read data:
   outlist <- sapply(
     X = keys_to_test,
     FUN = function(i) {
       stopifnot(!is.null(sql_statements[[i]]))
 
       msg <- paste("Getting", i, "from database", db_name)
+      sql_extended <- NULL
 
       ## Apply time filtering (if needed):
       if (rv$restricting_date$use_it) {
@@ -324,7 +329,7 @@ load_database <- function(rv,
           msg <- paste0(msg, " (using a MODIFIED SUBSELECT)")
         } else {
           ## Filter SQL
-          sql <- apply_time_restriciton(
+          sql_list <- apply_time_restriciton(
             data = sql_statements[[i]],
             # filter_colname = unique(rv$mdr[get("key") == i &
             # get("source_system_name") == db_name &
@@ -336,13 +341,33 @@ load_database <- function(rv,
             key = i,
             mdr = rv$mdr,
             db_con = db_con,
-            logfile_dir = rv$log$logfile_dir
+            logfile_dir = rv$log$logfile_dir,
+            sql_create_view_all = rv$db_name$sql_create_view_all
           )
+          sql <- sql_list$sql
+          sql_extended <- sql_list$sql_extended
+          rv$db_name$sql_create_view_all <- sql_list$sql_create_view_all
           msg <- paste0(msg, " (using a TEMPORAL VIEW)")
         }
       } else {
         ## Unfiltered:
         sql <- sql_statements[[i]]
+      }
+
+      ## The `sql_extended` is the same like the normal `sql` but extened with
+      ## additional information needed to run the SQL, e.g. the commands
+      ## to create a view which the `sql` utilizes:
+      if (is.null(sql_extended) ||
+          !is.character(sql_extended)) {
+        sql_extended <- sql
+      } else {
+        DIZtools::feedback(
+          print_this = paste0(
+            "Found extended SQL information. Using this one now: ",
+            sql_extended
+          ),
+          findme = "060a2a152d"
+        )
       }
 
       DIZtools::feedback(print_this = sql,
@@ -359,6 +384,16 @@ load_database <- function(rv,
                          headless = rv$headless)
 
       dat <- tryCatch({
+        ## Note that there is also a `sql_extended`, which also has
+        ## commands to create the necessary view(s) in it. BUT: This one
+        ## would create the same temporal filtered view again for every
+        ## data element. To avoid this, the view will be created if not
+        ## existing in the previous `apply_time_restriciton` call and
+        ## during the data extraction here, this view is assumed as existing.
+        ## Thats the reason why we only use the `sql` here and NOT the
+        ## extended `sql_extended.` The temporal view will automatically be
+        ## deleted after the connection is closed. So no need to manually
+        ## close it.
         DIZutils::query_database(db_con = db_con,
                                  sql_statement = sql)
       },
@@ -403,7 +438,16 @@ load_database <- function(rv,
         # raise error
         stop(msg)
       } else {
-        return(dat)
+        sql_extended <- gsub(
+          pattern = "(,|AND|SELECT|FROM|JOIN|ON|WHERE)\\s?",
+          replacement = "\\1\n",
+          x = sql_extended,
+          ignore.case = FALSE
+        )
+        return(list(
+          "outdata" = dat,
+          "sql_statements" = sql_extended
+        ))
       }
 
     },
@@ -425,7 +469,7 @@ load_database <- function(rv,
     )
 
     # get column names
-    col_names <- colnames(outlist[[i]])
+    col_names <- colnames(outlist[[i]][["outdata"]])
 
     # sometimes, colnames are altered by SQL-statement.
     # The next step is required to fix these wrong colnames
@@ -453,7 +497,7 @@ load_database <- function(rv,
         ]
         if (length(correct_colname) == 1) {
           data.table::setnames(
-            x = outlist[[i]],
+            x = outlist[[i]][["outdata"]],
             old = wcn,
             new = correct_colname
           )
@@ -479,7 +523,7 @@ load_database <- function(rv,
 
       if (var_type %in% c("enumerated", "string", "catalog")) {
         # transform to factor
-        outlist[[i]][, (j) := factor(get(j))]
+        outlist[[i]][["outdata"]][, (j) := factor(get(j))]
       } else if (var_type == "datetime") {
         # transform date variables
         # transform date variables
@@ -491,19 +535,23 @@ load_database <- function(rv,
         ]
         if (is.na(date_format) ||
             grepl("^\\s*$", date_format) ||
-            is.null(jsonlite::fromJSON(date_format)[["datetime_format"]])) {
+            is.null(jsonlite::fromJSON(
+              date_format
+            )[["datetime"]][["format"]])) {
           # set date format to default value
           date_format <- "%Y-%m-%d"
         } else{
-          date_format <- jsonlite::fromJSON(date_format)[["datetime_format"]]
+          date_format <- jsonlite::fromJSON(
+            date_format
+          )[["datetime"]][["format"]]
         }
-        outlist[[i]][, (j) := as.Date(
+        outlist[[i]][["outdata"]][, (j) := as.Date(
           as.character(get(j)),
           format = date_format
         )]
       } else if (var_type %in% c("integer", "float")) {
         # transform numeric variables
-        outlist[[i]][, (j) := as.numeric(
+        outlist[[i]][["outdata"]][, (j) := as.numeric(
           as.character(get(j))
         )]
       }
@@ -684,95 +732,98 @@ data_loading <- function(rv, system, keys_to_test) {
     )
     outlist$sql_statements <- NA
 
-  } else if (system$system_type == "postgres") {
-    # import target SQL
-    outlist$sql_statements <- load_sqls(utils_path = rv$utilspath,
-                                        db = system$system_name)
-    stopifnot(is.list(outlist$sql_statements))
+  } else if (system$system_type %in% c("oracle", "postgres")) {
+    if (system$system_type == "postgres") {
+      # import target SQL
+      sql_statements <- load_sqls(utils_path = rv$utilspath,
+                                          db = system$system_name)
+      stopifnot(is.list(sql_statements))
 
-    # test target_db
-    if (is.null(system$settings)) {
-      ## Use environment-settings:
-      db_con <-
-        DIZutils::db_connection(
-          system_name = system$system_name,
-          db_type = system$system_type,
-          headless = rv$headless,
-          logfile_dir = rv$log$logfile_dir
-        )
-    } else {
-      ## Use included settings:
-      db_con <-
-        DIZutils::db_connection(
-          system_name = system$system_name,
-          db_type = system$system_type,
-          headless = rv$headless,
-          logfile_dir = rv$log$logfile_dir,
-          from_env = FALSE,
-          settings = system$settings
-        )
+      # test target_db
+      if (is.null(system$settings)) {
+        ## Use environment-settings:
+        db_con <-
+          DIZutils::db_connection(
+            system_name = system$system_name,
+            db_type = system$system_type,
+            headless = rv$headless,
+            logfile_dir = rv$log$logfile_dir
+          )
+      } else {
+        ## Use included settings:
+        db_con <-
+          DIZutils::db_connection(
+            system_name = system$system_name,
+            db_type = system$system_type,
+            headless = rv$headless,
+            logfile_dir = rv$log$logfile_dir,
+            from_env = FALSE,
+            settings = system$settings
+          )
+      }
+      stopifnot(!is.null(db_con))
+
+    }  else if (system$system_type == "oracle") {
+      # import target SQL
+      sql_statements <- load_sqls(utils_path = rv$utilspath,
+                                          db = system$system_name)
+      stopifnot(is.list(sql_statements))
+
+      # test target_db
+      if (is.null(system$settings)) {
+        ## Use environment-settings:
+        db_con <-
+          DIZutils::db_connection(
+            system_name = system$system_name,
+            db_type = system$system_type,
+            headless = rv$headless,
+            logfile_dir = rv$log$logfile_dir,
+            lib_path = Sys.getenv(paste0(
+              toupper(system$system_name), "_DRIVER"
+            ))
+          )
+      } else {
+        ## Use included settings:
+        db_con <-
+          DIZutils::db_connection(
+            system_name = system$system_name,
+            db_type = system$system_type,
+            headless = rv$headless,
+            logfile_dir = rv$log$logfile_dir,
+            lib_path = Sys.getenv(paste0(
+              toupper(system$system_name), "_DRIVER"
+            )),
+            from_env = FALSE,
+            settings = system$settings
+          )
+      }
+      stopifnot(!is.null(db_con))
     }
-
-    stopifnot(!is.null(db_con))
-
     # load target data
-    outlist$outdata <- load_database(
+    loaded_from_db <- load_database(
       rv = rv,
-      sql_statements = outlist$sql_statements,
+      sql_statements = sql_statements,
       db_con = db_con,
       keys_to_test = keys_to_test,
       headless = rv$headless,
       db_name = system$system_name,
       db_type = system$system_type
     )
-    rm(db_con)
-
-  }  else if (system$system_type == "oracle") {
-    # import target SQL
-    outlist$sql_statements <- load_sqls(utils_path = rv$utilspath,
-                                        db = system$system_name)
-    stopifnot(is.list(outlist$sql_statements))
-
-    # test target_db
-    if (is.null(system$settings)) {
-      ## Use environment-settings:
-      db_con <-
-        DIZutils::db_connection(
-          system_name = system$system_name,
-          db_type = system$system_type,
-          headless = rv$headless,
-          logfile_dir = rv$log$logfile_dir,
-          lib_path = Sys.getenv(paste0(
-            toupper(system$system_name), "_DRIVER"
-          ))
-        )
-    } else {
-      ## Use included settings:
-      db_con <-
-        DIZutils::db_connection(
-          system_name = system$system_name,
-          db_type = system$system_type,
-          headless = rv$headless,
-          logfile_dir = rv$log$logfile_dir,
-          lib_path = Sys.getenv(paste0(
-            toupper(system$system_name), "_DRIVER"
-          )),
-          from_env = FALSE,
-          settings = system$settings
-        )
-    }
-
-    stopifnot(!is.null(db_con))
-
-    # load target data
-    outlist$outdata <- load_database(
-      rv = rv,
-      sql_statements = outlist$sql_statements,
-      db_con = db_con,
-      keys_to_test = keys_to_test,
-      headless = rv$headless,
-      db_name = system$system_name,
-      db_type = system$system_type
+    outlist$outdata <- sapply(
+      X = names(loaded_from_db),
+      FUN = function(x) {
+        loaded_from_db[[x]][["outdata"]]
+      },
+      simplify = FALSE,
+      USE.NAMES = TRUE
+    )
+    outlist$sql_statements <- sapply(
+      X = names(loaded_from_db),
+      FUN = function(x) {
+        loaded_from_db[[x]][["sql_statements"]]
+      },
+      simplify = FALSE,
+      USE.NAMES = TRUE
     )
     rm(db_con)
 

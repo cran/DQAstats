@@ -41,16 +41,26 @@
 #'
 #' @export
 #'
-read_mdr <- function(utils_path, mdr_filename = "mdr.csv") {
+read_mdr <- function(utils_path = NULL, mdr_filename = "mdr.csv") {
 
-  mdr <- data.table::fread(
-    file.path(
+  if (!is.null(utils_path)) {
+    mdr_path <- file.path(
       file.path(
         DIZtools::clean_path_name(utils_path, remove.slash = TRUE),
         "MDR"
       ),
       mdr_filename
-    ),
+    )
+  } else {
+    mdr_path <- mdr_filename
+  }
+
+  stopifnot(
+    file.exists(mdr_path)
+  )
+
+  mdr <- data.table::fread(
+    file = mdr_path,
     header = TRUE
   )
 
@@ -70,9 +80,13 @@ read_mdr <- function(utils_path, mdr_filename = "mdr.csv") {
     ]
 
   # fix representation of missing values in all columns
-  for (i in colnames(mdr)) {
-    mdr[get(i) == "", (i) := NA]
-  }
+  mdr[mdr == ""] <- NA
+
+  # make empty definitions readable to avoid errors
+  mdr[
+    is.na(get("definition")),
+    ("definition") := "(The definition is missing in the MDR.)"
+  ]
 
   ## Remove rows with "undefined" key or variablename:
   mdr <- mdr[!(get("key") == "undefined" |
@@ -153,15 +167,27 @@ read_mdr <- function(utils_path, mdr_filename = "mdr.csv") {
 create_helper_vars <- function(mdr,
                                source_db,
                                target_db) {
-
   # We only allow one (system) type per system name. There can't e.g. be
   # system types "csv" and "postgres" both with the system_name "data":
-  stopifnot(
-    length(mdr[get("source_system_name") ==
-                 source_db, unique(get("source_system_type"))]) == 1,
-    length(mdr[get("source_system_name") ==
-                 target_db, unique(get("source_system_type"))]) == 1
-  )
+  if (!(length(mdr[get("source_system_name") ==
+                   source_db, unique(get("source_system_type"))]) == 1 &&
+        length(mdr[get("source_system_name") ==
+                   target_db, unique(get("source_system_type"))]) == 1)) {
+    DIZtools::feedback(
+      print_this = paste0(
+        "Error in create_helper_vars(mdr, ",
+        "source_db = '",
+        source_db,
+        "', ",
+        "target_db = '",
+        target_db,
+        "')."
+      ),
+      type = "Error",
+      findme = "bee3956587"
+    )
+    stop("See error above.")
+  }
 
   outlist <- list()
 

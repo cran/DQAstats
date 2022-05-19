@@ -205,7 +205,8 @@ value_conformance <- function(
 
         for (j in c("source_data", "target_data")) {
           d_out <- desc_out[[j]]
-          s_out <- stat_out[[j]]
+          s_out <- stat_out[[j]] %>%
+            data.table::data.table()
 
           if (j == "source_data") {
             raw_data <- "data_source"
@@ -552,8 +553,7 @@ value_conformance <- function(
                   }
                 }
               } else if (d_out$checks$var_type == "datetime") {
-                if (((nrow(s_out) == 1) && is.na(s_out[[1, 1]])) ||
-                    (nrow(s_out) == 0)) {
+                if (is.na(s_out[[1, 2]])) {
                   outlist2$conformance_error <- TRUE
                   outlist2$conformance_results <-
                     "No data available to perform conformance checks."
@@ -607,43 +607,104 @@ value_conformance <- function(
                   ## in load_database(), search for 'datetime_format'):
                   constraints_names <- names(constraints)
                   if (length(constraints_names) == 1 &&
-                        constraints_names[[1]] == "datetime_format") {
-                    DIZtools::feedback(
-                      print_this = paste0(
-                        "Value conformance check for variable '",
-                        i,
-                        "' will be set to 'passed', because there is no other",
-                        " constraint given next to the format of the date",
-                        " which was already tested and applied due to the",
-                        " data loading process."
-                      ),
-                      findme = "38486b5105",
-                      logfile_dir = logfile_dir,
-                      headless = headless
-                    )
-                  } else {
-                    DIZtools::feedback(
-                      print_this = paste0(
-                        "Cannot perform value conformance check for variable '",
-                        i,
-                        "' because there is no logic implemented ",
-                        "for constrains '",
-                        paste(
-                          constraints_names[
-                            constraints_names != "datetime_format"
-                          ], collapse = "', '"),
-                        "'. Search for this value in the ",
-                        "brackets in the code to implement:"
-                      ),
-                      type = "Warning",
-                      findme = "4c83f9bb78",
-                      logfile_dir = logfile_dir,
-                      headless = headless
-                    )
+                        constraints_names[[1]] == "datetime") {
+                    if (is.null(s_out) || nrow(s_out) == 0 ||
+                        (any(is.na(s_out[, 2])) ||
+                         (s_out[4, 2] == "NaN"))) {
+                      outlist2$conformance_error <- TRUE
+                      outlist2$conformance_results <-
+                        "No data available to perform conformance checks."
+                    } else {
+
+                      # set colnames (we need them here to correctly
+                      # select the data)
+                      colnames(s_out) <- c("name", "value")
+
+                      error_flag <- FALSE
+
+                      # TODO add value_thresholds here as tolerance-/border zone
+                      result_min <- s_out[get("name") == "Min.", get("value")]
+                      result_max <- s_out[get("name") == "Max.", get("value")]
+
+                      # compare levels from results to constraints from valueset
+                      #% (TRUE = constraint_error)
+                      if (result_min < as.Date(constraints$datetime$min)) {
+                        DIZtools::feedback(
+                          paste(i, "from", j, ": result_min < datetime$min"),
+                          findme = "21abaa38e2",
+                          logfile_dir = logfile_dir
+                        )
+                        error_flag <- TRUE
+                      }
+
+                      if (result_max > as.Date(constraints$datetime$max)) {
+                        DIZtools::feedback(
+                          paste(i, "from", j, ": result_max > datetime$max"),
+                          findme = "44264e8a64",
+                          logfile_dir = logfile_dir
+                        )
+                        error_flag <- TRUE
+                      }
+
+                      outlist2$conformance_error <- error_flag
+                      outlist2$conformance_results <-
+                        ifelse(
+                          isTRUE(error_flag),
+                          "Extrem values are not conform with constraints.",
+                          "No 'value conformance' issues found."
+                        )
+
+                      if (isTRUE(outlist2$conformance_error)) {
+                        outlist2$rule <- constraints$datetime
+                        if (scope == "plausibility") {
+                          vec <- setdiff(
+                            colnames(rv[[raw_data]][[i]]),
+                            d_out$var_dependent
+                          )
+                        } else if (scope == "descriptive") {
+                          # does only work with tables with 2 columns (most
+                          # probably not with CSV files)
+                          vec <- setdiff(
+                            colnames(rv[[raw_data]][[tab]]),
+                            ih
+                          )
+                        }
+
+                        if (length(vec) != 1) {
+                          msg <- paste("Error occured when trying to get",
+                                       "errorneous IDs of", i, "from", j)
+                          DIZtools::feedback(
+                            print_this = msg,
+                            type = "Warning",
+                            findme = "5d0563563eb",
+                            logfile_dir = logfile_dir
+                          )
+                        } else {
+                          if (scope == "plausibility") {
+                            outlist2$affected_ids <- unique(
+                              rv[[raw_data]][[i]][
+                                get(d_out$var_dependent) <
+                                  as.Date(constraints$datetime$min) |
+                                  get(d_out$var_dependent) >
+                                  as.Date(constraints$datetime$max),
+                                vec,
+                                with = FALSE
+                              ]
+                            )
+                          } else if (scope == "descriptive") {
+                            outlist2$affected_ids <- unique(
+                              rv[[raw_data]][[tab]][
+                                get(ih) < as.Date(constraints$datetime$min) |
+                                  get(ih) > as.Date(constraints$datetime$max),
+                                vec,
+                                with = FALSE
+                              ]
+                            )
+                          }
+                        }
+                      }
+                    }
                   }
-                  outlist2$conformance_error <- FALSE
-                  outlist2$conformance_results <-
-                    "No 'value conformance' issues found."
                 }
               } else {
                 DIZtools::feedback(
@@ -849,26 +910,36 @@ value_conformance_checks <- function(results) {
 
 
   for (i in obj_names) {
-    error_source <-
-      ifelse(
-        !is.null(results[[i]]$source_data),
+    if (results[[i]]$source_data$conformance_results ==
+        "No data available to perform conformance checks.") {
+      error_source <- "no data available"
+    } else {
+      error_source <-
         ifelse(
-          results[[i]]$source_data$conformance_error,
-          "failed",
-          "passed"
-        ),
-        "ERROR"
-      )
-    error_target <-
-      ifelse(
-        !is.null(results[[i]]$target_data),
+          !is.null(results[[i]]$source_data),
+          ifelse(
+            results[[i]]$source_data$conformance_error,
+            "failed",
+            "passed"
+          ),
+          "ERROR"
+        )
+    }
+    if (results[[i]]$target_data$conformance_results ==
+        "No data available to perform conformance checks.") {
+      error_target <- "no data available"
+    } else {
+      error_target <-
         ifelse(
-          results[[i]]$target_data$conformance_error,
-          "failed",
-          "passed"
-        ),
-        "ERROR"
-      )
+          !is.null(results[[i]]$target_data),
+          ifelse(
+            results[[i]]$target_data$conformance_error,
+            "failed",
+            "passed"
+          ),
+          "ERROR"
+        )
+    }
     out <- rbind(
       out,
       data.table::data.table(

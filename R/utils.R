@@ -76,7 +76,8 @@ get_where_filter <- function(filter) {
 parallel <- function(parallel, logfile_dir, ncores) {
   if (isTRUE(parallel) && future::availableCores() > 1) {
     if (ncores < future::availableCores()) {
-      ncores <- future::availableCores()
+      ncores <- future::availableCores() %>%
+        unname()
     }
 
     if (.Platform$OS.type == "unix") {
@@ -87,7 +88,27 @@ parallel <- function(parallel, logfile_dir, ncores) {
         logfile_dir = logfile_dir,
         headless = TRUE
       )
-      suppressWarnings(future::plan("multicore", worker = ncores))
+
+      fplan <- tryCatch(
+        expr = {
+          suppressWarnings(
+            fplan <- future::plan("multicore", workers = ncores)
+          )
+          fplan
+        }, error = function(e) {
+          DIZtools::feedback(
+            e,
+            logjs = FALSE,
+            findme = "8e8817df63",
+            logfile_dir = logfile_dir,
+            headless = TRUE
+          )
+          fplan <- "error"
+          fplan
+        }, finally = function(f) {
+          fplan
+        }
+      )
 
     } else {
       DIZtools::feedback(
@@ -97,9 +118,30 @@ parallel <- function(parallel, logfile_dir, ncores) {
         logfile_dir = logfile_dir,
         headless = TRUE
       )
-      suppressWarnings(future::plan("multisession", worker = ncores))
+      fplan <- tryCatch(
+        expr = {
+          suppressWarnings(
+            fplan <- future::plan("multisession", workers = ncores)
+          )
+          fplan
+        }, error = function(e) {
+          DIZtools::feedback(
+            e,
+            logjs = FALSE,
+            findme = "8e8817df62",
+            logfile_dir = logfile_dir,
+            headless = TRUE
+          )
+          fplan <- "error"
+          fplan
+        }, finally = function(f) {
+          fplan
+        }
+      )
     }
-  } else {
+  }
+
+  if (isFALSE(parallel) || fplan == "error") {
     DIZtools::feedback(
       "using future::plan(\"sequential\")",
       logjs = FALSE,
@@ -107,8 +149,12 @@ parallel <- function(parallel, logfile_dir, ncores) {
       logfile_dir = logfile_dir,
       headless = TRUE
     )
-    suppressWarnings(future::plan("sequential"))
+    suppressWarnings(
+      fplan <- future::plan("sequential")
+    )
   }
+  # https://www.rdocumentation.org/packages/future/versions/1.24.0/topics/plan
+  on.exit(future::plan(fplan), add = TRUE)
 }
 
 #' @title Checks if there is a LaTeX installation available

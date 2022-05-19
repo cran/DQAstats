@@ -15,8 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-context("test MDR function")
-
 library(data.table)
 
 test_that("correct functioning of MDR", {
@@ -80,7 +78,7 @@ test_that("correct functioning of MDR", {
 
   expect_type(rv$mdr, "list")
   expect_equal(nrow(rv$mdr), 24)
-  expect_true(ncol(rv$mdr) == 18)
+  expect_equal(ncol(rv$mdr), 15)
   expect_s3_class(rv$mdr, "data.table")
 
   # Remove the settings and output-folder:
