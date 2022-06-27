@@ -1,4 +1,5 @@
 ## ---- include = FALSE---------------------------------------------------------
+# nolint start
 knitr::opts_chunk$set(
   echo = TRUE,
   message = FALSE,
@@ -372,4 +373,5 @@ file.copy(
 #    mdr_filename = "mdr.csv",
 #    parallel = FALSE
 #  )
+#  # nolint end
 

@@ -146,8 +146,10 @@ descriptive_results <- function(rv,
         msg <- paste("Getting variable descriptions of", i)
         DIZtools::feedback(
           msg,
+          logjs = isFALSE(headless),
           findme = "eb95542ec1",
-          logfile_dir = rv$log$logfile_dir
+          logfile_dir = rv$log$logfile_dir,
+          headless = headless
         )
 
         # generate descriptions
@@ -172,7 +174,7 @@ descriptive_results <- function(rv,
             #"value_threshold",
             #"missing_threshold",
             "filter"
-          ), with = F
+          ), with = FALSE
         ]
 
         if (nrow(desc_dat) > 1 ||
@@ -180,12 +182,14 @@ descriptive_results <- function(rv,
           outlist$description <- calc_description(desc_dat, rv)
         } else {
           msg <- paste0("Error occured during creating ",
-                        "descriptions of source system")
+                        "descriptions of source database")
           DIZtools::feedback(
             msg,
+            logjs = isFALSE(headless),
             type = "Error",
             findme = "b640b3c662",
-            logfile_dir = rv$log$logfile_dir
+            logfile_dir = rv$log$logfile_dir,
+            headless = headless
           )
           return()
         }
@@ -194,8 +198,10 @@ descriptive_results <- function(rv,
         msg <- paste("Calculating variable counts of", i)
         DIZtools::feedback(
           msg,
+          logjs = isFALSE(headless),
           findme = "056f1ee2e0",
-          logfile_dir = rv$log$logfile_dir
+          logfile_dir = rv$log$logfile_dir,
+          headless = headless
         )
 
         # generate counts
@@ -229,8 +235,10 @@ descriptive_results <- function(rv,
         msg <- paste("Calculating variable statistics of", i)
         DIZtools::feedback(
           msg,
+          logjs = isFALSE(headless),
           findme = "edf4f006a9",
-          logfile_dir = rv$log$logfile_dir
+          logfile_dir = rv$log$logfile_dir,
+          headless = headless
         )
 
 

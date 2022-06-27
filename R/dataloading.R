@@ -120,7 +120,7 @@ load_csv_files <- function(mdr,
         DIZtools::feedback(
           paste0(
             outlist[[inputfile]][get("AUFNAHMEANLASS") == "B", .N],
-            paste0(" chaperones present in source data system.\n\n",
+            paste0(" chaperones present in source database.\n\n",
                    "These will be removed from further analyses.")
           ),
           findme = "14ae722d8b",
@@ -252,7 +252,7 @@ load_csv <- function(rv,
               )[["datetime"]][["format"]])) {
             # set date format to default value
             date_format <- "%Y-%m-%d"
-          } else{
+          } else {
             date_format <- jsonlite::fromJSON(
               date_format
             )[["datetime"]][["format"]]
@@ -540,7 +540,7 @@ load_database <- function(rv,
             )[["datetime"]][["format"]])) {
           # set date format to default value
           date_format <- "%Y-%m-%d"
-        } else{
+        } else {
           date_format <- jsonlite::fromJSON(
             date_format
           )[["datetime"]][["format"]]

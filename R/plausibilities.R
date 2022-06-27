@@ -215,7 +215,12 @@ get_atemp_plausis <- function(rv,
               constr <- u$constraints$value_set[[src_flag]]
 
               outlist[[k]]$checks$constraints <-
-                jsonlite::toJSON(list("value_set" = constr))
+                as.character(
+                  jsonlite::toJSON(
+                    x = list("value_set" = constr),
+                    auto_unbox = TRUE
+                  )
+                )
             }
 
             # TODO this is yet tailored to §21
@@ -234,6 +239,7 @@ get_atemp_plausis <- function(rv,
                       get("dqa_assessment") == 1, get(key_col_name_tar)]
               raw_data <- "data_target"
             }
+            stopifnot(length(u_key) == 1)
 
             if (i %in% colnames(rv[[raw_data]][[u_key]])) {
               if (!is.null(u$filter[[src_flag]])) {
@@ -273,6 +279,7 @@ get_atemp_plausis <- function(rv,
                         # Back to key: 'variable_name' was assigned here:
                         get("dqa_assessment") == 1, get(key_col_name_tar)]
               }
+              stopifnot(length(m_key) == 1)
 
               if (!is.null(u$filter[[src_flag]])) {
                 m_x <- unique(rv[[raw_data]][[u_key]][grepl(
@@ -319,6 +326,7 @@ get_atemp_plausis <- function(rv,
                           # Back to key: 'variable_name' was assigned here:
                           get("dqa_assessment") == 1, get(key_col_name_tar)]
                 }
+                stopifnot(length(j_key) == 1)
                 msg <- paste(
                   "--> found", i, "in",
                   j_key, " (Joined over 3 tables)"
