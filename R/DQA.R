@@ -61,9 +61,6 @@
 #'   See `?strptime` for possible parameters.
 #'   Currently not implemented! So there is no effect if you pass a format here.
 #'
-#' @import data.table
-#' @importFrom magrittr "%>%"
-#'
 #' @return This function is a wrapper around all helper functions in `DQAstats`
 #'   to perform the data quality assessment. The results are summarized in a
 #'   PDF report which is saved to `outdir`. The return value of this function is
@@ -276,7 +273,7 @@ dqa <- function(source_system_name,
     check_date_restriction_requirements(
       mdr = rv$mdr,
       system_names = c(rv$source$system_name, rv$target$system_name),
-      # restricting_date = rv$restricting_date,
+      #% restricting_date = rv$restricting_date,
       logfile_dir = rv$log$logfile_dir,
       headless = rv$headless
     )
@@ -488,19 +485,6 @@ dqa <- function(source_system_name,
   export_aggregated(
     output_dir = output_dir,
     rv = rv
-  )
-
-  # export descriptive results (inkl. atemporal plausbility)
-  export_affected_ids(
-    rv = rv,
-    output_dir = output_dir,
-    object = rv$conformance$value_conformance
-  )
-
-  export_affected_ids(
-    rv = rv,
-    output_dir = output_dir,
-    object = rv$results_plausibility_unique
   )
 
   create_markdown(

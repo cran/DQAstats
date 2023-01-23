@@ -137,7 +137,7 @@ check_date_restriction_requirements <- # nolint
               " target database are not identically filtered."
             ),
             type = "Warning",
-            # ui = !headless,
+            #% ui = !headless,
             findme = "a178197913"
           )
         }
@@ -443,11 +443,9 @@ apply_time_restriciton <- function(data,
             table,
             " WHERE ",
             timestamp_col_sql,
-            " >= timestamp '",
+            " BETWEEN '",
             format(x = lower_limit, format = "%Y-%m-%d %H:%M:%S"),
-            "' AND ",
-            timestamp_col_sql,
-            " <= timestamp '",
+            "' AND '",
             format(x = upper_limit, format = "%Y-%m-%d %H:%M:%S"),
             "')"
           )
