@@ -1,4 +1,4 @@
-## ---- include = FALSE---------------------------------------------------------
+## ----include = FALSE----------------------------------------------------------
 # nolint start
 knitr::opts_chunk$set(
   echo = TRUE,
@@ -7,10 +7,6 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
 )
-if (.Platform$OS.type == "windows") {
-  # due to corrupt rds-file from dataquieR package
-  knitr::opts_chunk$set(eval = FALSE)
-}
 library(magrittr)
 
 ## -----------------------------------------------------------------------------
@@ -30,12 +26,9 @@ ship_url <- paste0(
   "https://raw.githubusercontent.com/cran/dataquieR/",
   "master/inst/extdata/ship.RDS"
 )
-download.file(
-  url = ship_url,
-  destfile = ship_fn
-)
-Sys.sleep(1)
-ship_data <- readRDS(ship_fn) %>%
+tmpf <- tempfile()
+download.file(ship_url, tmpf, mode = "wb")
+ship_data <- readRDS(tmpf) %>%
   data.table::data.table()
 
 # export the dataset to a CSV-file (one of the formats supported by DQAstats)
@@ -56,12 +49,9 @@ ship_meta_url <- paste0(
   "https://raw.githubusercontent.com/cran/dataquieR/",
   "master/inst/extdata/ship_meta.RDS"
 )
-download.file(
-  url = ship_meta_url,
-  destfile = ship_meta_fn
-)
-Sys.sleep(1)
-ship_meta <- readRDS(ship_meta_fn) %>%
+tmpf <- tempfile()
+download.file(ship_meta_url, tmpf, mode = "wb")
+ship_meta <- readRDS(tmpf) %>%
   data.table::data.table()
 
 ## ----results='asis'-----------------------------------------------------------
@@ -86,7 +76,7 @@ colnames(mdr)
 
 ## ----warning=FALSE------------------------------------------------------------
 # get names of dataelements from ship dataset
-ship_var_names <- colnames(ship_data)
+ship_var_names <- intersect(colnames(ship_data), ship_meta[, get("VAR_NAMES")])
 
 # loop over dataelements
 for (var in ship_var_names) {
