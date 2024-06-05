@@ -56,6 +56,7 @@ load_csv_files <- function(mdr,
       ]
     )
 
+
     select_cols <- unlist(
       sapply(
         X = input_vars$source_variable_name,
@@ -72,6 +73,11 @@ load_csv_files <- function(mdr,
       )
     )
 
+    # if there are timestamp columns they also need to be selected
+    # so add them to select_cols
+
+    select_cols["TIMESTAMP"] <- "character"
+
     unfiltered_table <- NULL
     filtered_table <- NULL
 
@@ -83,6 +89,11 @@ load_csv_files <- function(mdr,
       na.strings = "",
       stringsAsFactors = TRUE
     )
+
+    # if there are NA values in timestamp column delete it
+    if (any(is.na(unfiltered_table$TIMESTAMP))) {
+      unfiltered_table$TIMESTAMP <- NULL
+    }
 
     msg <- paste("Getting ", inputfile)
 
@@ -229,6 +240,11 @@ load_csv <- function(rv,
                                get("source_table_name") == i &
                                get("source_variable_name") == j,
                              unique(get("variable_type"))]
+
+          # Timestamp columns are not in MDR, convert them to Posixct
+          if (j == "TIMESTAMP") {
+            outlist[[i]] [, (j) := as.POSIXct(as.character(get(j)))]
+          }
 
           if (j %in% var_names && j %in% colnames(outlist[[i]])) {
             vn <- rv$mdr[get("source_table_name") == i &
@@ -387,7 +403,8 @@ load_database <- function(rv,
         sql <- sql_statements[[i]]
       }
 
-      # replace not-allowed AS for aliasing r_interediate in case of oracle statements
+      # replace not-allowed AS for aliasing r_interediate
+      # in case of oracle statements
       if (db_type == "oracle") {
         sql <- gsub("AS r_intermediate", "r_intermediate", sql)
       }
@@ -460,20 +477,39 @@ load_database <- function(rv,
       }
 
 
-      # check, if table has more than two columns and thus does not comply
+      # check, if table has more than two columns or three colmns
+      # and no TIMESTAMP column and thus does not comply
       # with DQAstats table requirements for SQL based systems
-      if (ncol(dat) > 2) {
+      if (ncol(dat) > 3) {
         msg <- paste0(
           "Table of data element '",
           i,
-          "' has > 2 columns. Aborting session.\n",
-          "Please adjust the SQL statement to return max. 2 columns."
+          "' has > 3 columns. Aborting session.\n",
+          "Please adjust the SQL statement to return max. 3 columns."
         )
         DIZtools::feedback(
           print_this = msg,
           type = "Error",
           logjs = isFALSE(headless),
           findme = "c1902dd9cf",
+          logfile_dir = rv$log$logfile_dir,
+          headless = rv$headless
+        )
+        # raise error
+        stop(msg)
+      } else if (ncol(dat) == 3 & !"TIMESTAMP" %in% colnames(dat)) {
+        msg <- paste0(
+          "Table of data element '",
+          i,
+          "' has 3 columns but no TIMESTAMP column. Aborting session.\n",
+          "Please adjust the SQL statement to return 2 columns \n",
+          "or 2 columns and 1 TIMESTAMP column"
+        )
+        DIZtools::feedback(
+          print_this = msg,
+          type = "Error",
+          logjs = isFALSE(headless),
+          findme = "c1902dd9cx",
           logfile_dir = rv$log$logfile_dir,
           headless = rv$headless
         )
@@ -532,6 +568,9 @@ load_database <- function(rv,
     # get wrong colnames
     wrong_colnames <- col_names[col_names %notin% mdr_var_names]
 
+    #Timestamp colnames are not in mdr but allowed at this point
+    wrong_colnames <- wrong_colnames[wrong_colnames != "TIMESTAMP"]
+
     if (length(wrong_colnames) > 0) {
       for (wcn in wrong_colnames) {
         correct_colname <- mdr_var_names[
@@ -562,9 +601,15 @@ load_database <- function(rv,
 
     # check, if column name in variables of interest
     for (j in col_names) {
+
       var_type <- rv$mdr[get("source_system_name") == db_name &
                            #get("key") == i &
                            get("variable_name") == j, get("variable_type")]
+
+      #Timestamp columns are not in MDR, give them type timestamp
+      if (j == "TIMESTAMP") {
+        var_type <- "timestamp"
+      }
 
       if (var_type %in% c("enumerated", "string", "catalog")) {
         # transform to factor
@@ -599,6 +644,14 @@ load_database <- function(rv,
         outlist[[i]][["outdata"]][, (j) := as.numeric(
           as.character(get(j))
         )]
+      } else if (var_type == "timestamp") {
+        # convert oracle timestamps into POSIXct
+        # postgress timestamps are allready correct
+        if (db_type == "oracle") {
+          outlist[[i]][["outdata"]][, (j) := as.POSIXct(
+            as.character(get(j))
+          )]
+        }
       }
     }
   }

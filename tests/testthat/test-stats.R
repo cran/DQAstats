@@ -28,7 +28,7 @@ test_that("correct functioning of statistics", {
   )
   testdat[, ("gender") := factor(get("gender"))]
 
-  testres <- count_uniques(
+  testres <- DQAstats:::count_uniques(
     data = testdat,
     var = "gender",
     sourcesystem = "testsystem",
@@ -40,11 +40,11 @@ test_that("correct functioning of statistics", {
   expect_true(testres$valids == 20)
 
 
-  testres <- extensive_summary(
+  testres <- DQAstats:::extensive_summary(
     vector = testdat$age
   )
 
-  expect_known_hash(testres, "0fe6cc9f60")
+  expect_snapshot_value(testres, style = "json2")
 
   do.call(
     file.remove,

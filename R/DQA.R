@@ -337,6 +337,7 @@ dqa <- function(source_system_name,
     system = rv$source,
     keys_to_test = rv$keys_source
   )
+
   rv$data_source <- temp_dat$outdata
   rv$source$sql <- temp_dat$sql_statements
   rm(temp_dat)
@@ -350,6 +351,7 @@ dqa <- function(source_system_name,
       system = rv$target,
       keys_to_test = rv$keys_target
     )
+
     rv$data_target <- temp_dat$outdata
     rv$target$sql <- temp_dat$sql_statements
     rm(temp_dat)
@@ -358,6 +360,25 @@ dqa <- function(source_system_name,
     rv$data_target <- rv$data_source
     rv$target$sql <- rv$source$sql
   }
+
+  # time_compare
+
+  rv$time_compare_results <- time_compare(rv = rv,
+                                          logfile_dir = rv$log$logfile_dir,
+                                          headless = rv$headless)
+
+  # delete the TIMESTAMP columns
+
+  fun <- function(x) {
+
+    if ("TIMESTAMP" %in% names(x)) {
+      x$TIMESTAMP <- NULL
+    }
+    return(x)
+  }
+
+  rv$data_source <- lapply(rv$data_source, fun)
+  rv$data_target <- lapply(rv$data_target, fun)
 
   if (nrow(rv$pl$atemp_vars) > 0 && rv$pl$atemp_possible) {
     # get atemporal plausibilities
@@ -475,6 +496,9 @@ dqa <- function(source_system_name,
   # checks$etl
   rv$checks$etl <- etl_checks(results = rv$results_descriptive)
 
+  # checks$differences
+  rv$checks$differences <- difference_checks(results = rv$results_descriptive)
+
   # create report
   if (!dir.exists(output_dir)) {
     output_dir %>%
@@ -486,7 +510,7 @@ dqa <- function(source_system_name,
     rv = rv
   )
 
-  create_markdown(
+  create_pdf_report(
     rv = rv,
     utils_path = rv$utilspath,
     outdir = output_dir,

@@ -1,13 +1,7 @@
 ## ----include = FALSE----------------------------------------------------------
 # nolint start
-knitr::opts_chunk$set(
-  echo = TRUE,
-  message = FALSE,
-  warning = FALSE,
-  collapse = TRUE,
-  comment = "#>"
-)
 library(magrittr)
+
 
 ## -----------------------------------------------------------------------------
 # the next lines are commentend, since we avoided to have 'dataquieR' as yet
@@ -21,7 +15,6 @@ library(magrittr)
 #   system.file("extdata/ship.RDS", package = "dataquieR")
 # ) %>%
 #   data.table::data.table()
-ship_fn <- file.path(tempdir(), "ship.RDS")
 ship_url <- paste0(
   "https://raw.githubusercontent.com/cran/dataquieR/",
   "master/inst/extdata/ship.RDS"
@@ -38,13 +31,13 @@ data.table::fwrite(
   file = file.path(tempdir(), ship_data_export_fn)
 )
 
+
 ## -----------------------------------------------------------------------------
 # load the ship metadata
 # ship_meta <- readRDS(
 #   system.file("extdata/ship_meta.RDS", package = "dataquieR")
 # ) %>%
 #   data.table::data.table()
-ship_meta_fn <- file.path(tempdir(), "ship_meta.RDS")
 ship_meta_url <- paste0(
   "https://raw.githubusercontent.com/cran/dataquieR/",
   "master/inst/extdata/ship_meta.RDS"
@@ -54,12 +47,14 @@ download.file(ship_meta_url, tmpf, mode = "wb")
 ship_meta <- readRDS(tmpf) %>%
   data.table::data.table()
 
+
 ## ----results='asis'-----------------------------------------------------------
 ship_meta %>%
   DT::datatable(options = list(
     scrollX = TRUE,
     pageLength = 4
   ))
+
 
 ## -----------------------------------------------------------------------------
 mdr <- data.table::fread(
@@ -73,6 +68,7 @@ mdr <- data.table::fread(
 )
 dim(mdr)
 colnames(mdr)
+
 
 ## ----warning=FALSE------------------------------------------------------------
 # get names of dataelements from ship dataset
@@ -122,6 +118,7 @@ for (var in ship_var_names) {
   )
 }
 
+
 ## -----------------------------------------------------------------------------
 # save all categorical variablees in a vector
 cat_vars <- c(
@@ -133,6 +130,7 @@ cat_vars <- c(
 # change variable type from integer to "enumerated" (to get meaningful
 # results from DQAstats)
 mdr[get("designation") %in% cat_vars, ("variable_type") := "enumerated"]
+
 
 ## ----warning=FALSE------------------------------------------------------------
 # loop over categorical variables
@@ -168,16 +166,19 @@ for (var in cat_vars) {
   mdr[get("source_variable_name") == var, ("constraints") := c]
 }
 
+
 ## -----------------------------------------------------------------------------
 # for comparison, show metadata definition from dataquieR ...
 # dataquieR: string, split by pipes '|'
 ship_meta[get("VAR_NAMES") == "smoking", get("VALUE_LABELS")]
+
 
 ## -----------------------------------------------------------------------------
 # ... and DQAstats: JSON
 mdr[get("source_variable_name") == "smoking", get("constraints")]
 mdr[get("source_variable_name") == "smoking", get("constraints")] %>%
   jsonlite::fromJSON()
+
 
 ## -----------------------------------------------------------------------------
 # get names of continuous variables (float/integer)
@@ -226,6 +227,7 @@ for (var in cont_vars) {
   }
 }
 
+
 ## -----------------------------------------------------------------------------
 # The `id` variable should actually not be treated as a categorical variable,
 # since the number of potential categories is (theoretically) unlimited and
@@ -244,6 +246,7 @@ mdr[get("source_variable_name") == "id", ("constraints") := jsonlite::toJSON(
   pretty = TRUE,
   auto_unbox = TRUE
 )]
+
 
 ## -----------------------------------------------------------------------------
 # add plausibilities
@@ -276,6 +279,7 @@ mdr[
   plausibility_relation := p
 ]
 
+
 ## -----------------------------------------------------------------------------
 p <- jsonlite::toJSON(list(
   "atemporal" = list(
@@ -302,6 +306,7 @@ mdr[
   plausibility_relation := p
 ]
 
+
 ## -----------------------------------------------------------------------------
 p <- jsonlite::toJSON(list(
   "uniqueness" = list(
@@ -320,12 +325,14 @@ mdr[
   plausibility_relation := p
 ]
 
+
 ## ----results='asis'-----------------------------------------------------------
 mdr %>%
   DT::datatable(options = list(
     scrollX = TRUE,
     pageLength = 4
   ))
+
 
 ## ----message=FALSE------------------------------------------------------------
 utils_path <- file.path(tempdir(), "utilities")
@@ -336,6 +343,7 @@ data.table::fwrite(
   file = file.path(utils_path, "MDR/mdr.csv")
 )
 
+
 ## ----results='hide'-----------------------------------------------------------
 file.copy(
   from = system.file("demo_data/utilities/RMD", package = "DQAstats"),
@@ -344,39 +352,41 @@ file.copy(
   recursive = TRUE
 )
 
+
 ## ----eval=FALSE, warning=FALSE, message=FALSE---------------------------------
-#  # ship data set
-#  source_system_name <- "ship"
-#  target_system_name <- source_system_name
-#  
-#  mdr_filename <- "mdr.csv"
-#  output_dir <- file.path(tempdir(), "output")
-#  logfile_dir = tempdir()
-#  
-#  # does only work, if "ship_data.csv" is lying next to this RMD-file
-#  Sys.setenv("SHIP_PATH" = tempdir())
-#  
-#  # provide all arguments to main function
-#  all_results <- DQAstats::dqa(
-#    source_system_name = source_system_name,
-#    target_system_name = target_system_name,
-#    utils_path = utils_path,
-#    mdr_filename = mdr_filename,
-#    output_dir = output_dir,
-#    logfile_dir = logfile_dir,
-#    parallel = FALSE
-#  )
+## # ship data set
+## source_system_name <- "ship"
+## target_system_name <- source_system_name
+## 
+## mdr_filename <- "mdr.csv"
+## output_dir <- file.path(tempdir(), "output")
+## logfile_dir = tempdir()
+## 
+## # does only work, if "ship_data.csv" is lying next to this RMD-file
+## Sys.setenv("SHIP_PATH" = tempdir())
+## 
+## # provide all arguments to main function
+## all_results <- DQAstats::dqa(
+##   source_system_name = source_system_name,
+##   target_system_name = target_system_name,
+##   utils_path = utils_path,
+##   mdr_filename = mdr_filename,
+##   output_dir = output_dir,
+##   logfile_dir = logfile_dir,
+##   parallel = FALSE
+## )
+
 
 ## ----eval=FALSE---------------------------------------------------------------
-#  library(DQAgui)
-#  # set basepath for file-browser in GUI-config
-#  Sys.setenv("CSV_SOURCE_BASEPATH" = tempdir())
-#  
-#  ## launch GUI
-#  DQAgui::launch_app(
-#    utils_path = utils_path,
-#    mdr_filename = "mdr.csv",
-#    parallel = FALSE
-#  )
-#  # nolint end
+## library(DQAgui)
+## # set basepath for file-browser in GUI-config
+## Sys.setenv("CSV_SOURCE_BASEPATH" = tempdir())
+## 
+## ## launch GUI
+## DQAgui::launch_app(
+##   utils_path = utils_path,
+##   mdr_filename = "mdr.csv",
+##   parallel = FALSE
+## )
+## # nolint end
 

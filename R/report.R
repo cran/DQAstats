@@ -174,6 +174,22 @@ render_data_map <- function(datamap) {
   }
 }
 
+render_difference_check <- function(datamap) {
+  if (!is.null(datamap) && nrow(datamap) > 0) {
+    # colnames are too long for proper display.
+    # Workaround by assigning shorter names
+    colnames(datamap) <-
+      c("Variable",
+        "Diff. Totals",
+        "Diff. Distincts",
+        "Diff. Valids",
+        "Diff. Missings")
+    print(kable_table(datamap))
+  } else {
+    cat("No dataelements from the datamap where analysed.")
+  }
+}
+
 render_uniq_plausis <- function(plausiresults) {
   # get names
   obj_names <- names(plausiresults)
@@ -234,7 +250,7 @@ render_atemp_plausis <- function(plausiresults,
 
     # overview
     cat("\n **Overview:**  \n")
-    render_counts(count_out, "source_data")
+    render_counts(count_out, stat_out, "source_data")
 
     # statistics
     cat("\n **Results:**  \n")
@@ -256,7 +272,7 @@ render_atemp_plausis <- function(plausiresults,
 
     # overview
     cat("\n **Overview:**  \n")
-    render_counts(count_out, "target_data")
+    render_counts(count_out, stat_out, "target_data")
 
     # statistics
     cat("\n **Results:**  \n")
@@ -284,4 +300,42 @@ render_atemp_pl_representation <- function(desc_out, source) {
     "\n"
   ))
   cat(paste0("- Join criterion: ", desc_out[[source]]$join_crit, "\n"))
+}
+
+render_time_compare <- function(time_compare_results) {
+
+  # similar to kable_table function form utils.R
+  # but this has row.names = FALSE to suppress IDs
+
+  obj_names <- names(time_compare_results)
+
+  tmp_firstline <- TRUE
+
+  for (i in obj_names) {
+
+    if (tmp_firstline) {
+      ## Skip newpage for the first variable
+      tmp_firstline <- FALSE
+    } else {
+      cat("\\newpage")
+    }
+    # title of variable
+    cat(paste0("\n## ", i, "  \n"))
+
+    render_this <- function(data) {
+
+      return(
+        knitr::kable(data,
+                     row.names = FALSE,
+                     digits = 3,
+                     format = "latex") %>%
+          kableExtra::row_spec(0, bold = TRUE) %>%
+          kableExtra::kable_styling(full_width = FALSE,
+                                    latex_options = "HOLD_position")
+      )
+    }
+
+    # print only the first 30 rows
+    print(render_this(utils::head(time_compare_results[[i]]$result_table, 30)))
+  }
 }
