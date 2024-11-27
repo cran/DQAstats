@@ -354,39 +354,39 @@ file.copy(
 
 
 ## ----eval=FALSE, warning=FALSE, message=FALSE---------------------------------
-## # ship data set
-## source_system_name <- "ship"
-## target_system_name <- source_system_name
-## 
-## mdr_filename <- "mdr.csv"
-## output_dir <- file.path(tempdir(), "output")
-## logfile_dir = tempdir()
-## 
-## # does only work, if "ship_data.csv" is lying next to this RMD-file
-## Sys.setenv("SHIP_PATH" = tempdir())
-## 
-## # provide all arguments to main function
-## all_results <- DQAstats::dqa(
-##   source_system_name = source_system_name,
-##   target_system_name = target_system_name,
-##   utils_path = utils_path,
-##   mdr_filename = mdr_filename,
-##   output_dir = output_dir,
-##   logfile_dir = logfile_dir,
-##   parallel = FALSE
-## )
+# # ship data set
+# source_system_name <- "ship"
+# target_system_name <- source_system_name
+# 
+# mdr_filename <- "mdr.csv"
+# output_dir <- file.path(tempdir(), "output")
+# logfile_dir = tempdir()
+# 
+# # does only work, if "ship_data.csv" is lying next to this RMD-file
+# Sys.setenv("SHIP_PATH" = tempdir())
+# 
+# # provide all arguments to main function
+# all_results <- DQAstats::dqa(
+#   source_system_name = source_system_name,
+#   target_system_name = target_system_name,
+#   utils_path = utils_path,
+#   mdr_filename = mdr_filename,
+#   output_dir = output_dir,
+#   logfile_dir = logfile_dir,
+#   parallel = FALSE
+# )
 
 
 ## ----eval=FALSE---------------------------------------------------------------
-## library(DQAgui)
-## # set basepath for file-browser in GUI-config
-## Sys.setenv("CSV_SOURCE_BASEPATH" = tempdir())
-## 
-## ## launch GUI
-## DQAgui::launch_app(
-##   utils_path = utils_path,
-##   mdr_filename = "mdr.csv",
-##   parallel = FALSE
-## )
-## # nolint end
+# library(DQAgui)
+# # set basepath for file-browser in GUI-config
+# Sys.setenv("CSV_SOURCE_BASEPATH" = tempdir())
+# 
+# ## launch GUI
+# DQAgui::launch_app(
+#   utils_path = utils_path,
+#   mdr_filename = "mdr.csv",
+#   parallel = FALSE
+# )
+# # nolint end
 
