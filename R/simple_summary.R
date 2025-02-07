@@ -17,7 +17,7 @@
 #
 # simple summary
 simple_summary <- function(vector) {
-  ar <- as.data.frame(as.array(summary(vector)))
+  ar <- array2DF(as.array(summary(vector)))
   ar[, 2] <- as.character(ar[, 2])
   colnames(ar) <- c(" ", " ")
   return(ar)

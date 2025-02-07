@@ -19,7 +19,6 @@ library(data.table)
 
 test_that("correct functioning of etl_checks and difference_checks", {
 
-
   utils_path <- system.file(
     "demo_data/utilities/",
     package = "DQAstats"

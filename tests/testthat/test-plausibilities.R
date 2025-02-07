@@ -19,7 +19,6 @@ library(data.table)
 
 test_that("correct functioning of atemporal plausibilities", {
 
-
   utils_path <- system.file(
     "demo_data/utilities/",
     package = "DQAstats"

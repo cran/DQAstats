@@ -15,10 +15,8 @@ library(magrittr)
 #   system.file("extdata/ship.RDS", package = "dataquieR")
 # ) %>%
 #   data.table::data.table()
-ship_url <- paste0(
-  "https://raw.githubusercontent.com/cran/dataquieR/",
-  "master/inst/extdata/ship.RDS"
-)
+ship_url <-
+  "https://dataquality.qihs.uni-greifswald.de/extdata/ship.RDS"
 tmpf <- tempfile()
 download.file(ship_url, tmpf, mode = "wb")
 ship_data <- readRDS(tmpf) %>%
@@ -38,10 +36,8 @@ data.table::fwrite(
 #   system.file("extdata/ship_meta.RDS", package = "dataquieR")
 # ) %>%
 #   data.table::data.table()
-ship_meta_url <- paste0(
-  "https://raw.githubusercontent.com/cran/dataquieR/",
-  "master/inst/extdata/ship_meta.RDS"
-)
+ship_meta_url <-
+  "https://dataquality.qihs.uni-greifswald.de/extdata/ship_meta.RDS"
 tmpf <- tempfile()
 download.file(ship_meta_url, tmpf, mode = "wb")
 ship_meta <- readRDS(tmpf) %>%
@@ -372,8 +368,7 @@ file.copy(
 #   utils_path = utils_path,
 #   mdr_filename = mdr_filename,
 #   output_dir = output_dir,
-#   logfile_dir = logfile_dir,
-#   parallel = FALSE
+#   logfile_dir = logfile_dir
 # )
 
 

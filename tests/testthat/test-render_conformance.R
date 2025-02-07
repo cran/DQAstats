@@ -19,7 +19,6 @@ library(data.table)
 
 test_that("correct functioning of rendering the conformance results", {
 
-
   utils_path <- system.file(
     "demo_data/utilities/",
     package = "DQAstats"

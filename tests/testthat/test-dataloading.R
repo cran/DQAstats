@@ -18,6 +18,7 @@
 library(data.table)
 
 test_that("correct functioning of dataloading", {
+
   source_system_name <- "exampleCSV_source"
   target_system_name <- "exampleCSV_target"
 

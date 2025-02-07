@@ -19,7 +19,6 @@ library(data.table)
 
 test_that("correct functioning of generate_datamap", {
 
-
   utils_path <- system.file(
     "demo_data/utilities/",
     package = "DQAstats"

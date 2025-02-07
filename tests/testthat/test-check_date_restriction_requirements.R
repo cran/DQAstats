@@ -19,7 +19,6 @@ library(data.table)
 
 test_that("correct functioning of check_date_restriction_requirements", {
 
-
   utils_path <- system.file(
     "demo_data/utilities/",
     package = "DQAstats"
