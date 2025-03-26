@@ -63,7 +63,12 @@ mdr <- data.table::fread(
   colClasses = "character"
 )
 dim(mdr)
+#> [1]  0 15
 colnames(mdr)
+#>  [1] "designation"           "source_variable_name"  "filter"                "source_table_name"     "source_system_name"    "source_system_type"   
+#>  [7] "key"                   "variable_name"         "variable_type"         "restricting_date_var"  "constraints"           "dqa_assessment"       
+#> [13] "definition"            "data_map"              "plausibility_relation"
+
 
 
 ## ----warning=FALSE------------------------------------------------------------
@@ -167,13 +172,17 @@ for (var in cat_vars) {
 # for comparison, show metadata definition from dataquieR ...
 # dataquieR: string, split by pipes '|'
 ship_meta[get("VAR_NAMES") == "smoking", get("VALUE_LABELS")]
+#> [1] "0 = nonsmoker | 1 = former smoker | 2 = smoker"
 
 
 ## -----------------------------------------------------------------------------
 # ... and DQAstats: JSON
 mdr[get("source_variable_name") == "smoking", get("constraints")]
+#> [1] "{\n  \"value_set\": [\"0\", \"1\", \"2\"]\n}"
 mdr[get("source_variable_name") == "smoking", get("constraints")] %>%
   jsonlite::fromJSON()
+#> $value_set
+#> [1] "0" "1" "2"
 
 
 ## -----------------------------------------------------------------------------

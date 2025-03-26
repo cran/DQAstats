@@ -1,7 +1,7 @@
 Package: DQAstats
 Title: Core Functions for Data Quality Assessment
-Version: 0.3.7
-Date: 2025-02-07
+Version: 0.3.8
+Date: 2025-03-25
 Authors@R: c(
     person("Lorenz A.", "Kapsner", , "lorenz.kapsner@gmail.com", role = c("cre", "aut"),
            comment = c(ORCID = "0000-0003-1866-860X")),
@@ -29,7 +29,7 @@ SystemRequirements: Quarto command line tools
         (https://github.com/quarto-dev/quarto-cli).
 RoxygenNote: 7.3.2
 NeedsCompilation: no
-Packaged: 2025-02-07 15:37:02 UTC; user
+Packaged: 2025-03-26 10:58:33 UTC; user
 Author: Lorenz A. Kapsner [cre, aut] (<https://orcid.org/0000-0003-1866-860X>),
   Jonathan M. Mang [aut] (<https://orcid.org/0000-0003-0518-4710>),
   Helene Köster [ctb],
@@ -38,4 +38,4 @@ Author: Lorenz A. Kapsner [cre, aut] (<https://orcid.org/0000-0003-1866-860X>),
   Universitätsklinikum Erlangen [cph]
 Maintainer: Lorenz A. Kapsner <lorenz.kapsner@gmail.com>
 Repository: CRAN
-Date/Publication: 2025-02-07 16:10:02 UTC
+Date/Publication: 2025-03-26 17:20:05 UTC
